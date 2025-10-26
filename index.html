@@ -41,7 +41,7 @@ input, select, button { padding:8px; margin:4px; border-radius:6px; border:none;
     <button id="backToSets">Back to Sets</button>
   </div>
   <div id="cardGrid"></div>
-  <p id="loadingMore" style="display:none;">Loading more cards...</p>
+  <p id="loadingMore" style="display:none;">Loading cards...</p>
 </div>
 
 <div id="cardModal" class="modal">
@@ -56,6 +56,131 @@ input, select, button { padding:8px; margin:4px; border-radius:6px; border:none;
   </div>
 </div>
 
-<script src="scripts.js"></script>
+<script>
+const setGrid = document.getElementById('setGrid');
+const cardGrid = document.getElementById('cardGrid');
+const landing = document.getElementById('landing');
+const gallery = document.getElementById('gallery');
+const searchInput = document.getElementById('search');
+const languageSelect = document.getElementById('language');
+const backBtn = document.getElementById('backToSets');
+const loadingMore = document.getElementById('loadingMore');
+
+const modal = document.getElementById('cardModal');
+const modalName = document.getElementById('modalName');
+const modalFront = document.getElementById('modalFront');
+const modalBack = document.getElementById('modalBack');
+const modalPrice = document.getElementById('modalPrice');
+const includeBack = document.getElementById('includeBack');
+const downloadBtn = document.getElementById('downloadCard');
+const closeModal = document.querySelector('.close');
+
+let sets = [];
+let currentSet = null;
+let currentCards = [];
+let filteredCards = [];
+let currentCard = null;
+
+const setsAPI = 'https://api.pokemontcg.io/v2/sets';
+const cardsAPI = setId => `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}+language:${languageSelect.value}`;
+
+// Fetch sets from API
+async function fetchSets() {
+  try {
+    const res = await fetch(setsAPI);
+    const data = await res.json();
+    sets = data.data; // API returns { data: [...] }
+    renderSets();
+  } catch(e){
+    setGrid.innerHTML='<p>Failed to load sets. Try again later.</p>';
+    console.error(e);
+  }
+}
+
+function renderSets() {
+  setGrid.innerHTML='';
+  sets.forEach(set=>{
+    const div = document.createElement('div');
+    div.className='setCard';
+    div.innerHTML=`<img src="${set.logo}" alt="${set.name}"><p>${set.name}</p>`;
+    div.addEventListener('click',()=>openSet(set));
+    setGrid.appendChild(div);
+  });
+}
+
+async function openSet(set){
+  currentSet = set;
+  landing.style.display='none';
+  gallery.style.display='block';
+  cardGrid.innerHTML='';
+  loadingMore.style.display='block';
+  
+  try {
+    const res = await fetch(cardsAPI(set.id));
+    const data = await res.json();
+    currentCards = data.data;
+    renderCards();
+  } catch(e){
+    cardGrid.innerHTML='<p>Failed to load cards. Try again later.</p>';
+    console.error(e);
+  } finally {
+    loadingMore.style.display='none';
+  }
+}
+
+function renderCards(){
+  const term = searchInput.value.toLowerCase();
+  filteredCards = currentCards.filter(c=>c.name.toLowerCase().includes(term));
+  cardGrid.innerHTML='';
+  filteredCards.forEach(card=>{
+    const div = document.createElement('div');
+    div.className='card';
+    const front = card.images?.small || '';
+    const back = card.images?.back || front;
+    div.innerHTML=`<div class="card-inner">
+      <div class="card-front"><img loading="lazy" src="${front}" alt="${card.name}"></div>
+      <div class="card-back"><img loading="lazy" src="${back}" alt="${card.name}"></div>
+    </div>`;
+    div.addEventListener('click',()=>openCardModal(card));
+    cardGrid.appendChild(div);
+  });
+}
+
+// Modal
+function openCardModal(card){
+  currentCard = card;
+  modal.style.display='flex';
+  modalName.textContent = card.name;
+  modalFront.src = card.images?.small || '';
+  modalBack.src = card.images?.back || card.images?.small || '';
+  modalPrice.textContent = card.tcgplayer?.prices?.normal?.market ? `$${card.tcgplayer.prices.normal.market}` : 'Price N/A';
+  includeBack.checked=false;
+}
+
+closeModal.addEventListener('click',()=>modal.style.display='none');
+window.addEventListener('click',e=>{if(e.target===modal) modal.style.display='none';});
+
+downloadBtn.addEventListener('click',()=>{
+  if(!currentCard) return;
+  const data = {name:currentCard.name, front:modalFront.src};
+  if(includeBack.checked) data.back = modalBack.src;
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;
+  a.download = currentCard.name.replace(/[^a-z0-9]/gi,'_')+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+searchInput.addEventListener('input',renderCards);
+languageSelect.addEventListener('change',()=>openSet(currentSet));
+backBtn.addEventListener('click',()=>{
+  gallery.style.display='none';
+  landing.style.display='block';
+});
+
+fetchSets();
+</script>
 </body>
 </html>
