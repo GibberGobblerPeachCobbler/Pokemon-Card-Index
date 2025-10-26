@@ -1,105 +1,98 @@
-// ===== CONFIG =====
-const proxy = "pokemonproxy.gibthehunter.workers.dev"; // replace this!
-const setsAPI = "https://api.pokemontcg.io/v2/sets";
-const cardsAPI = setId => `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}+language:en`;
-
-// ===== ELEMENTS =====
-const setGrid = document.getElementById("setGrid");
-const cardGrid = document.getElementById("cardGrid");
-const landing = document.getElementById("landing");
-const gallery = document.getElementById("gallery");
+const setsDiv = document.getElementById("sets");
+const cardsDiv = document.getElementById("cards");
+const backButton = document.getElementById("backButton");
 const searchInput = document.getElementById("search");
-const backBtn = document.getElementById("backToSets");
-const loadingMore = document.getElementById("loadingMore");
-const modal = document.getElementById("cardModal");
-const modalName = document.getElementById("modalName");
-const modalFront = document.getElementById("modalFront");
-const modalPrice = document.getElementById("modalPrice");
-const closeModal = document.querySelector(".close");
+const languageSelect = document.getElementById("language");
 
-// ===== STATE =====
-let sets = [];
-let currentSet = null;
-let currentCards = [];
+let currentLanguage = "en";
+let allSets = [];
+let allCards = [];
 
-// ===== FUNCTIONS =====
 async function fetchSets() {
-  try {
-    const res = await fetch(proxy + encodeURIComponent(setsAPI));
-    const data = await res.json();
-    sets = data.data;
-    renderSets();
-  } catch (err) {
-    console.error(err);
-    setGrid.innerHTML = "<p>Failed to load sets.</p>";
-  }
+  setsDiv.innerHTML = "<p>Loading sets...</p>";
+  const res = await fetch(`https://api.tcgdex.net/v2/${currentLanguage}/sets`);
+  allSets = await res.json();
+  displaySets(allSets);
 }
 
-function renderSets() {
-  setGrid.innerHTML = "";
+function displaySets(sets) {
+  setsDiv.innerHTML = "";
+  cardsDiv.style.display = "none";
+  setsDiv.style.display = "grid";
+  backButton.style.display = "none";
+
   sets.forEach(set => {
     const div = document.createElement("div");
-    div.className = "setCard";
+    div.className = "set";
     div.innerHTML = `
-      ${set.images?.logo ? `<img src="${set.images.logo}" alt="${set.name} logo">` : ""}
-      <p>${set.name}</p>
+      <img src="${set.logo}" alt="${set.name}" />
+      <h3>${set.name}</h3>
+      <p>${set.releaseDate || "Unknown Date"}</p>
     `;
-    div.addEventListener("click", () => openSet(set));
-    setGrid.appendChild(div);
+    div.onclick = () => openSet(set.id);
+    setsDiv.appendChild(div);
   });
 }
 
-async function openSet(set) {
-  currentSet = set;
-  landing.style.display = "none";
-  gallery.style.display = "block";
-  cardGrid.innerHTML = "";
-  loadingMore.style.display = "block";
+async function openSet(setId) {
+  setsDiv.style.display = "none";
+  cardsDiv.style.display = "grid";
+  backButton.style.display = "inline-block";
+  cardsDiv.innerHTML = "<p>Loading cards...</p>";
 
-  try {
-    const res = await fetch(proxy + encodeURIComponent(cardsAPI(set.id)));
-    const data = await res.json();
-    currentCards = data.data;
-    renderCards();
-  } catch (err) {
-    console.error(err);
-    cardGrid.innerHTML = "<p>Failed to load cards.</p>";
-  } finally {
-    loadingMore.style.display = "none";
-  }
+  const res = await fetch(`https://api.tcgdex.net/v2/${currentLanguage}/sets/${setId}`);
+  const setData = await res.json();
+
+  allCards = setData.cards || [];
+  displayCards(allCards);
 }
 
-function renderCards() {
-  const term = searchInput.value.toLowerCase();
-  const filtered = currentCards.filter(c => c.name.toLowerCase().includes(term));
-  cardGrid.innerHTML = "";
-  filtered.forEach(card => {
+function displayCards(cards) {
+  cardsDiv.innerHTML = "";
+  cards.forEach(card => {
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = `<img src="${card.images.small}" alt="${card.name}">`;
-    div.addEventListener("click", () => openCardModal(card));
-    cardGrid.appendChild(div);
+    div.innerHTML = `
+      <img src="${card.image}" alt="${card.name}" />
+      <h4>${card.name}</h4>
+      <p>${card.rarity || ""}</p>
+    `;
+    div.onclick = () => showCardDetails(card);
+    cardsDiv.appendChild(div);
   });
 }
 
-function openCardModal(card) {
-  modal.style.display = "flex";
-  modalName.textContent = card.name;
-  modalFront.src = card.images.large;
-  modalPrice.textContent = card.tcgplayer?.prices?.normal?.market
-    ? `$${card.tcgplayer.prices.normal.market}`
-    : "Price N/A";
+function showCardDetails(card) {
+  cardsDiv.innerHTML = `
+    <img src="${card.image}" alt="${card.name}" />
+    <h2>${card.name}</h2>
+    <p>Rarity: ${card.rarity || "N/A"}</p>
+    <button onclick="window.open('${card.image}', '_blank')">Download Card</button>
+    <button onclick="displayCards(allCards)">⬅ Back</button>
+  `;
 }
 
-closeModal.addEventListener("click", () => (modal.style.display = "none"));
-window.addEventListener("click", e => {
-  if (e.target === modal) modal.style.display = "none";
-});
-searchInput.addEventListener("input", renderCards);
-backBtn.addEventListener("click", () => {
-  gallery.style.display = "none";
-  landing.style.display = "block";
+backButton.onclick = () => {
+  cardsDiv.style.display = "none";
+  setsDiv.style.display = "grid";
+  backButton.style.display = "none";
+};
+
+searchInput.addEventListener("input", e => {
+  const search = e.target.value.toLowerCase();
+  if (cardsDiv.style.display === "grid") {
+    const filtered = allCards.filter(c => c.name.toLowerCase().includes(search));
+    displayCards(filtered);
+  } else {
+    const filteredSets = allSets.filter(s => s.name.toLowerCase().includes(search));
+    displaySets(filteredSets);
+  }
 });
 
-// ===== INIT =====
+languageSelect.onchange = () => {
+  currentLanguage = languageSelect.value;
+  fetchSets();
+};
+
+// Load sets on page start
 fetchSets();
