@@ -1,192 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pokémon Card Browser</title>
-<style>
-body { background:#000; color:#fff; font-family:sans-serif; margin:0; padding:20px; text-align:center;}
-h1 { margin-bottom:20px;}
-#controls { margin-bottom:10px;}
-input, select, button { padding:8px; margin:4px; border-radius:6px; border:none; background:rgba(255,255,255,0.1); color:white; cursor:pointer;}
-#setGrid, #cardGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
-.setCard, .card { border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.05); box-shadow:0 0 6px rgba(255,255,255,0.2); cursor:pointer; padding:10px;}
-.setCard img { max-width:100%; height:50px; object-fit:contain; margin-bottom:5px;}
-.card { perspective:1000px; }
-.card-inner { transition: transform 0.6s; transform-style:preserve-3d; position:relative; }
-.card:hover .card-inner { transform:rotateY(180deg); }
-.card-front, .card-back { position:absolute; width:100%; backface-visibility:hidden; border-radius:10px; }
-.card-back { transform:rotateY(180deg); }
-.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; z-index:1000; }
-.modal-content { background:#222; padding:20px; border-radius:12px; max-width:400px; text-align:center; position:relative;}
-.close { position:absolute; top:10px; right:15px; font-size:24px; cursor:pointer; }
-#loadingMore { margin-top:20px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Index</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #ef5350;
+      color: white;
+      padding: 1em;
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+
+    #landing, #gallery {
+      padding: 1em;
+      display: none;
+    }
+
+    #landing {
+      display: block;
+    }
+
+    .setGrid, .cardGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1em;
+    }
+
+    .setCard, .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      padding: 1em;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .setCard:hover, .card:hover {
+      transform: scale(1.05);
+    }
+
+    .setCard img {
+      width: 100%;
+      height: auto;
+      max-height: 100px;
+      object-fit: contain;
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    #backToSets {
+      margin-bottom: 1em;
+      background: #ef5350;
+      color: white;
+      border: none;
+      padding: 0.5em 1em;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #search {
+      width: 100%;
+      padding: 0.5em;
+      margin-bottom: 1em;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    #cardModal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 1em;
+      border-radius: 12px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .modal-content img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .close {
+      float: right;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+
+    #loadingMore {
+      text-align: center;
+      padding: 1em;
+    }
+  </style>
 </head>
 <body>
-<h1>Pokémon Card Browser</h1>
+  <header>Pokémon Card Index</header>
 
-<div id="landing">
-  <p>Loading sets...</p>
-  <div id="setGrid"></div>
-</div>
-
-<div id="gallery" style="display:none;">
-  <div id="controls">
-    <input type="text" id="search" placeholder="Search cards...">
-    <select id="language">
-      <option value="en">English 🇬🇧</option>
-      <option value="ja">Japanese 🇯🇵</option>
-    </select>
-    <button id="backToSets">Back to Sets</button>
+  <div id="landing">
+    <h2>Select a Set</h2>
+    <div id="setGrid" class="setGrid"></div>
   </div>
-  <div id="cardGrid"></div>
-  <p id="loadingMore" style="display:none;">Loading cards...</p>
-</div>
 
-<div id="cardModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h2 id="modalName"></h2>
-    <img id="modalFront" src="">
-    <img id="modalBack" src="">
-    <p id="modalPrice"></p>
-    <label><input type="checkbox" id="includeBack"> Include back image in download</label><br>
-    <button id="downloadCard">Download Card JSON</button>
+  <div id="gallery">
+    <button id="backToSets">← Back</button>
+    <input id="search" placeholder="Search cards...">
+    <div id="cardGrid" class="cardGrid"></div>
+    <div id="loadingMore">Loading...</div>
   </div>
-</div>
 
-<script>
-const setGrid = document.getElementById('setGrid');
-const cardGrid = document.getElementById('cardGrid');
-const landing = document.getElementById('landing');
-const gallery = document.getElementById('gallery');
-const searchInput = document.getElementById('search');
-const languageSelect = document.getElementById('language');
-const backBtn = document.getElementById('backToSets');
-const loadingMore = document.getElementById('loadingMore');
+  <div id="cardModal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 id="modalName"></h3>
+      <img id="modalFront">
+      <p id="modalPrice"></p>
+    </div>
+  </div>
 
-const modal = document.getElementById('cardModal');
-const modalName = document.getElementById('modalName');
-const modalFront = document.getElementById('modalFront');
-const modalBack = document.getElementById('modalBack');
-const modalPrice = document.getElementById('modalPrice');
-const includeBack = document.getElementById('includeBack');
-const downloadBtn = document.getElementById('downloadCard');
-const closeModal = document.querySelector('.close');
-
-let sets = [];
-let currentSet = null;
-let currentCards = [];
-let filteredCards = [];
-let currentCard = null;
-
-const setsAPI = 'https://api.pokemontcg.io/v2/sets';
-const cardsAPI = setId => `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}+language:${languageSelect.value}`;
-
-// ⚡ Add your API key here
-const apiHeaders = { 'X-Api-Key': '16b237d6-f926-4466-9afe-603ec9a9a010' };
-
-// Fetch sets from API
-async function fetchSets() {
-  try {
-    const res = await fetch(setsAPI, { headers: apiHeaders });
-    const data = await res.json();
-    sets = data.data;
-    renderSets();
-  } catch(e){
-    setGrid.innerHTML='<p>Failed to load sets. Try again later.</p>';
-    console.error(e);
-  }
-}
-
-function renderSets() {
-  setGrid.innerHTML='';
-  sets.forEach(set=>{
-    const div = document.createElement('div');
-    div.className='setCard';
-    div.innerHTML = `
-      ${set.images?.logo ? `<img src="${set.images.logo}" alt="${set.name} logo">` : ''}
-      <p>${set.name}</p>
-    `;
-    div.addEventListener('click',()=>openSet(set));
-    setGrid.appendChild(div);
-  });
-}
-
-async function openSet(set){
-  currentSet = set;
-  landing.style.display='none';
-  gallery.style.display='block';
-  cardGrid.innerHTML='';
-  loadingMore.style.display='block';
-  
-  try {
-    const res = await fetch(cardsAPI(set.id), { headers: apiHeaders });
-    const data = await res.json();
-    currentCards = data.data;
-    renderCards();
-  } catch(e){
-    cardGrid.innerHTML='<p>Failed to load cards. Try again later.</p>';
-    console.error(e);
-  } finally {
-    loadingMore.style.display='none';
-  }
-}
-
-function renderCards(){
-  const term = searchInput.value.toLowerCase();
-  filteredCards = currentCards.filter(c=>c.name.toLowerCase().includes(term));
-  cardGrid.innerHTML='';
-  filteredCards.forEach(card=>{
-    const div = document.createElement('div');
-    div.className='card';
-    const front = card.images?.small || '';
-    const back = card.images?.back || front;
-    div.innerHTML=`<div class="card-inner">
-      <div class="card-front"><img loading="lazy" src="${front}" alt="${card.name}"></div>
-      <div class="card-back"><img loading="lazy" src="${back}" alt="${card.name}"></div>
-    </div>`;
-    div.addEventListener('click',()=>openCardModal(card));
-    cardGrid.appendChild(div);
-  });
-}
-
-// Modal
-function openCardModal(card){
-  currentCard = card;
-  modal.style.display='flex';
-  modalName.textContent = card.name;
-  modalFront.src = card.images?.small || '';
-  modalBack.src = card.images?.back || card.images?.small || '';
-  modalPrice.textContent = card.tcgplayer?.prices?.normal?.market ? `$${card.tcgplayer.prices.normal.market}` : 'Price N/A';
-  includeBack.checked=false;
-}
-
-closeModal.addEventListener('click',()=>modal.style.display='none');
-window.addEventListener('click',e=>{if(e.target===modal) modal.style.display='none';});
-
-downloadBtn.addEventListener('click',()=>{
-  if(!currentCard) return;
-  const data = {name:currentCard.name, front:modalFront.src};
-  if(includeBack.checked) data.back = modalBack.src;
-  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url;
-  a.download = currentCard.name.replace(/[^a-z0-9]/gi,'_')+'.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
-
-searchInput.addEventListener('input',renderCards);
-languageSelect.addEventListener('change',()=>openSet(currentSet));
-backBtn.addEventListener('click',()=>{
-  gallery.style.display='none';
-  landing.style.display='block';
-});
-
-fetchSets();
-</script>
+  <script src="scripts.js"></script>
 </body>
 </html>
