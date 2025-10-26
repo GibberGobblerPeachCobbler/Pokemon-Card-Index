@@ -11,6 +11,7 @@ h1 { margin-bottom:20px;}
 input, select, button { padding:8px; margin:4px; border-radius:6px; border:none; background:rgba(255,255,255,0.1); color:white; cursor:pointer;}
 #setGrid, #cardGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
 .setCard, .card { border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.05); box-shadow:0 0 6px rgba(255,255,255,0.2); cursor:pointer; padding:10px;}
+.setCard img { max-width:100%; height:50px; object-fit:contain; margin-bottom:5px;}
 .card { perspective:1000px; }
 .card-inner { transition: transform 0.6s; transform-style:preserve-3d; position:relative; }
 .card:hover .card-inner { transform:rotateY(180deg); }
@@ -91,7 +92,7 @@ async function fetchSets() {
   try {
     const res = await fetch(setsAPI, { headers: apiHeaders });
     const data = await res.json();
-    sets = data.data; // API returns { data: [...] }
+    sets = data.data;
     renderSets();
   } catch(e){
     setGrid.innerHTML='<p>Failed to load sets. Try again later.</p>';
@@ -104,7 +105,10 @@ function renderSets() {
   sets.forEach(set=>{
     const div = document.createElement('div');
     div.className='setCard';
-    div.innerHTML=`<p>${set.name}</p>`;
+    div.innerHTML = `
+      ${set.logoUrl ? `<img src="${set.logoUrl}" alt="${set.name} logo">` : ''}
+      <p>${set.name}</p>
+    `;
     div.addEventListener('click',()=>openSet(set));
     setGrid.appendChild(div);
   });
