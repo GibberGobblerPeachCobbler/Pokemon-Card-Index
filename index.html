@@ -106,7 +106,7 @@ function renderSets() {
     const div = document.createElement('div');
     div.className='setCard';
     div.innerHTML = `
-      ${set.logoUrl ? `<img src="${set.logoUrl}" alt="${set.name} logo">` : ''}
+      ${set.images?.logo ? `<img src="${set.images.logo}" alt="${set.name} logo">` : ''}
       <p>${set.name}</p>
     `;
     div.addEventListener('click',()=>openSet(set));
