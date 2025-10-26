@@ -83,10 +83,13 @@ let currentCard = null;
 const setsAPI = 'https://api.pokemontcg.io/v2/sets';
 const cardsAPI = setId => `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}+language:${languageSelect.value}`;
 
+// ⚡ Add your API key here
+const apiHeaders = { 'X-Api-Key': '16b237d6-f926-4466-9afe-603ec9a9a010' };
+
 // Fetch sets from API
 async function fetchSets() {
   try {
-    const res = await fetch(setsAPI);
+    const res = await fetch(setsAPI, { headers: apiHeaders });
     const data = await res.json();
     sets = data.data; // API returns { data: [...] }
     renderSets();
@@ -115,7 +118,7 @@ async function openSet(set){
   loadingMore.style.display='block';
   
   try {
-    const res = await fetch(cardsAPI(set.id));
+    const res = await fetch(cardsAPI(set.id), { headers: apiHeaders });
     const data = await res.json();
     currentCards = data.data;
     renderCards();
