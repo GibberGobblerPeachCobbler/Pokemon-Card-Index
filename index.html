@@ -7,142 +7,75 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      color: #222;
+      background: #121212;
+      color: #fff;
       margin: 0;
       padding: 0;
+      text-align: center;
     }
-
     header {
-      background: #ef5350;
-      color: white;
-      padding: 1em;
-      text-align: center;
-      font-size: 1.5em;
-      font-weight: bold;
-    }
-
-    #landing, #gallery {
-      padding: 1em;
-      display: none;
-    }
-
-    #landing {
-      display: block;
-    }
-
-    .setGrid, .cardGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1em;
-    }
-
-    .setCard, .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      text-align: center;
-      padding: 1em;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .setCard:hover, .card:hover {
-      transform: scale(1.05);
-    }
-
-    .setCard img {
-      width: 100%;
-      height: auto;
-      max-height: 100px;
-      object-fit: contain;
-    }
-
-    .card img {
-      width: 100%;
-      border-radius: 8px;
-    }
-
-    #backToSets {
-      margin-bottom: 1em;
-      background: #ef5350;
-      color: white;
-      border: none;
-      padding: 0.5em 1em;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    #search {
-      width: 100%;
-      padding: 0.5em;
-      margin-bottom: 1em;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    #cardModal {
-      display: none;
-      position: fixed;
-      z-index: 10;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      justify-content: center;
+      padding: 1rem;
+      background: #1e1e1e;
+      display: flex;
+      justify-content: space-between;
       align-items: center;
     }
-
-    .modal-content {
-      background: white;
-      padding: 1em;
-      border-radius: 12px;
-      max-width: 400px;
-      text-align: center;
+    h1 {
+      margin: 0;
+      color: #ffcc00;
     }
-
-    .modal-content img {
-      width: 100%;
-      border-radius: 8px;
+    select, input {
+      padding: 0.5rem;
+      margin: 0.5rem;
+      border-radius: 5px;
+      border: none;
     }
-
-    .close {
-      float: right;
-      font-size: 1.2em;
+    #sets, #cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .set, .card {
+      background: #1f1f1f;
+      border-radius: 10px;
+      padding: 10px;
+      transition: transform 0.2s;
+    }
+    .set:hover, .card:hover {
+      transform: scale(1.05);
       cursor: pointer;
     }
-
-    #loadingMore {
-      text-align: center;
-      padding: 1em;
+    img {
+      width: 100%;
+      border-radius: 10px;
+    }
+    #backButton {
+      display: none;
+      margin: 1rem;
+      padding: 0.5rem 1rem;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <header>Pokémon Card Index</header>
-
-  <div id="landing">
-    <h2>Select a Set</h2>
-    <div id="setGrid" class="setGrid"></div>
-  </div>
-
-  <div id="gallery">
-    <button id="backToSets">← Back</button>
-    <input id="search" placeholder="Search cards...">
-    <div id="cardGrid" class="cardGrid"></div>
-    <div id="loadingMore">Loading...</div>
-  </div>
-
-  <div id="cardModal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h3 id="modalName"></h3>
-      <img id="modalFront">
-      <p id="modalPrice"></p>
+  <header>
+    <h1>Pokémon Card Index</h1>
+    <div>
+      <select id="language">
+        <option value="en">English</option>
+        <option value="ja">Japanese</option>
+      </select>
+      <input type="text" id="search" placeholder="Search cards..." />
     </div>
-  </div>
-
+  </header>
+  <button id="backButton">⬅ Back to Sets</button>
+  <div id="sets"></div>
+  <div id="cards" style="display: none;"></div>
   <script src="scripts.js"></script>
 </body>
 </html>
